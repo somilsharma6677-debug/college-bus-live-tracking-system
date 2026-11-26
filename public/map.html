@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Live Bus Map</title>
+
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+
+    <style>
+        * {
+
+            margin: 0;
+            padding: 0;
+
+            box-sizing: border-box;
+
+            font-family:
+                'Segoe UI',
+                Arial,
+                sans-serif;
+        }
+
+
+        html,
+        body {
+
+            width: 100%;
+            height: 100%;
+
+            overflow: hidden;
+        }
+
+
+        body {
+
+            background: #eef2f7;
+        }
+
+
+        #map {
+
+            position: absolute;
+
+            inset: 0;
+
+            width: 100%;
+            height: 100%;
+        }
+
+
+        /* =========================
+           TOP BAR
+        ========================= */
+
+        .top-bar {
+
+            position: absolute;
+
+            top: 20px;
+            left: 20px;
+            right: 20px;
+
+            z-index: 1000;
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            pointer-events: none;
+        }
+
+
+        .back-btn {
+
+            pointer-events: auto;
+
+            border: none;
+
+            background: white;
+
+            color: #1e3c72;
+
+            padding: 12px 17px;
+
+            border-radius: 12px;
+
+            font-size: 14px;
+
+            font-weight: 700;
+
+            cursor: pointer;
+
+            box-shadow:
+                0 5px 20px rgba(0, 0, 0, 0.15);
+
+            transition: 0.2s;
+        }
+
+
+        .back-btn:hover {
+
+            transform: translateY(-2px);
+        }
+
+
+        .bus-title {
+
+            background: white;
+
+            padding: 11px 18px;
+
+            border-radius: 14px;
+
+            box-shadow:
+                0 5px 20px rgba(0, 0, 0, 0.15);
+
+            text-align: center;
+        }
+
+
+        .bus-title strong {
+
+            display: block;
+
+            color: #1e3c72;
+
+            font-size: 17px;
+        }
+
+
+        .live {
+
+            color: #16a34a;
+
+            font-size: 12px;
+
+            font-weight: 700;
+        }
+
+
+        /* =========================
+           BOTTOM CARD
+        ========================= */
+
+        .info-card {
+
+            position: absolute;
+
+            left: 20px;
+            right: 20px;
+            bottom: 20px;
+
+            z-index: 1000;
+
+            background: rgba(255, 255, 255, 0.96);
+
+            backdrop-filter: blur(10px);
+
+            border-radius: 18px;
+
+            padding: 18px;
+
+            box-shadow:
+                0 8px 30px rgba(0, 0, 0, 0.18);
+
+            max-width: 600px;
+
+            margin: auto;
+        }
+
+
+        .info-grid {
+
+            display: grid;
+
+            grid-template-columns:
+                repeat(2, 1fr);
+
+            gap: 10px;
+        }
+
+
+        .info-box {
+
+            background: #f5f7fb;
+
+            padding: 13px;
+
+            border-radius: 12px;
+        }
+
+
+        .info-label {
+
+            color: #888;
+
+            font-size: 11px;
+
+            text-transform: uppercase;
+
+            font-weight: 700;
+
+            margin-bottom: 4px;
+        }
+
+
+        .info-value {
+
+            color: #1e3c72;
+
+            font-size: 15px;
+
+            font-weight: 700;
+        }
+
+
+        #status {
+
+            text-align: center;
+
+            margin-top: 12px;
+
+            font-size: 13px;
+
+            color: #555;
+        }
+
+
+        /* =========================
+           BUS ICON
+        ========================= */
+
+        .bus-marker {
+
+            font-size: 32px;
+
+            filter:
+                drop-shadow(0 3px 3px rgba(0, 0, 0, 0.3));
+
+            transition:
+                transform 0.3s ease;
+        }
+
+
+        /* =========================
+           MOBILE
+        ========================= */
+
+        @media (max-width: 600px) {
+
+            .top-bar {
+
+                top: 12px;
+                left: 12px;
+                right: 12px;
+            }
+
+
+            .back-btn {
+
+                padding: 10px 13px;
+
+                font-size: 13px;
+            }
+
+
+            .bus-title {
+
+                padding: 9px 13px;
+            }
+
+
+            .bus-title strong {
+
+                font-size: 15px;
+            }
+
+
+            .info-card {
+
+                left: 12px;
+                right: 12px;
+                bottom: 12px;
+
+                padding: 14px;
+            }
+
+        }
+    </style>
+
+</head>
+
+
+<body>
+
+
+    <!-- MAP -->
+
+    <div id="map"></div>
+
+
+    <!-- TOP -->
+
+    <div class="top-bar">
+
+
+        <button class="back-btn" onclick="goBack()">
+
+            ← Back
+
+        </button>
+
+
+        <div class="bus-title">
+
+            <strong id="busTitle">
+                🚌 Loading...
+            </strong>
+
+            <span class="live" id="liveStatus">
+
+                ● CONNECTING
+
+            </span>
+
+        </div>
+
+
+    </div>
+
+
+    <!-- INFORMATION -->
+
+    <div class="info-card">
+
+        <div class="info-grid">
+
+
+            <div class="info-box">
+
+                <div class="info-label">
+                    Distance
+                </div>
+
+                <div class="info-value" id="distance">
+
+                    --
+
+                </div>
+
+            </div>
+
+
+            <div class="info-box">
+
+                <div class="info-label">
+                    Estimated Arrival
+                </div>
+
+                <div class="info-value" id="eta">
+
+                    --
+
+                </div>
+
+            </div>
+
+
+            <div class="info-box">
+
+                <div class="info-label">
+                    Latitude
+                </div>
+
+                <div class="info-value" id="lat">
+
+                    --
+
+                </div>
+
+            </div>
+
+
+            <div class="info-box">
+
+                <div class="info-label">
+                    Longitude
+                </div>
+
+                <div class="info-value" id="lng">
+
+                    --
+
+                </div>
+
+            </div>
+
+
+        </div>
+
+
+        <div id="status">
+
+            Waiting for bus location...
+
+        </div>
+
+    </div>
+
+
+    <script src="/socket.io/socket.io.js"></script>
+
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js">
+    </script>
+
+
+    <script>
+
+        // =========================
+        // GET BUS FROM URL
+        // =========================
+
+        const params =
+            new URLSearchParams(
+                window.location.search
+            );
+
+
+        const busNumber =
+            params.get("bus");
+
+
+        if (!busNumber) {
+
+            window.location.href =
+                "/student.html";
+
+        }
+
+
+        document
+            .getElementById("busTitle")
+            .innerText =
+            "🚌 " + busNumber;
+
+
+        // =========================
+        // COLLEGE LOCATION
+        // =========================
+
+        const COLLEGE_LAT =
+            30.25149024595923;
+
+
+        const COLLEGE_LNG =
+            77.04680583557393;
+
+
+        const AVERAGE_SPEED_KMH = 25;
+
+
+        // =========================
+        // MAP
+        // =========================
+
+        const map =
+            L.map("map")
+                .setView(
+                    [
+                        COLLEGE_LAT,
+                        COLLEGE_LNG
+                    ],
+                    13
+                );
+
+
+        L.tileLayer(
+            "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+            {
+                attribution:
+                    "© OpenStreetMap contributors"
+            }
+        ).addTo(map);
+
+
+        // =========================
+        // COLLEGE MARKER
+        // =========================
+
+        const collegeIcon =
+            L.divIcon({
+
+                html:
+                    '<div style="' +
+                    'font-size:28px;' +
+                    'filter:drop-shadow(0 2px 2px rgba(0,0,0,.3));' +
+                    '">' +
+                    '🎓' +
+                    '</div>',
+
+                className: "",
+
+                iconSize: [32, 32],
+
+                iconAnchor: [16, 16]
+
+            });
+
+
+        L.marker(
+            [
+                COLLEGE_LAT,
+                COLLEGE_LNG
+            ],
+            {
+                icon: collegeIcon
+            }
+        )
+            .addTo(map)
+            .bindPopup(
+                "🎓 College"
+            );
+
+
+        // =========================
+        // BUS ICON
+        // =========================
+
+        const busIcon =
+            L.divIcon({
+
+                html:
+                    '<div class="bus-marker">' +
+                    '🚌' +
+                    '</div>',
+
+                className: "",
+
+                iconSize: [40, 40],
+
+                iconAnchor: [20, 20]
+
+            });
+
+
+        let busMarker = null;
+        let animationFrame = null;
+
+        function smoothMoveMarker(marker, from, to, duration = 1000) {
+            if (animationFrame) {
+                cancelAnimationFrame(animationFrame);
+            }
+
+            const startTime = performance.now();
+
+            function animate(currentTime) {
+                const progress = Math.min(
+                    (currentTime - startTime) / duration,
+                    1
+                );
+
+                // Smooth easing
+                const eased = progress < 0.5
+                    ? 2 * progress * progress
+                    : 1 - Math.pow(-2 * progress + 2, 2) / 2;
+
+                const lat =
+                    from[0] + (to[0] - from[0]) * eased;
+
+                const lng =
+                    from[1] + (to[1] - from[1]) * eased;
+
+                marker.setLatLng([lat, lng]);
+
+                if (progress < 1) {
+                    animationFrame =
+                        requestAnimationFrame(animate);
+                }
+            }
+
+            animationFrame =
+                requestAnimationFrame(animate);
+        }
+
+
+        let firstLocation = true;
+
+
+        // =========================
+        // DISTANCE
+        // =========================
+
+        function getDistanceKm(
+            lat1,
+            lng1,
+            lat2,
+            lng2
+        ) {
+
+            const R = 6371;
+
+
+            const dLat =
+                (lat2 - lat1)
+                * Math.PI / 180;
+
+
+            const dLng =
+                (lng2 - lng1)
+                * Math.PI / 180;
+
+
+            const a =
+                Math.sin(dLat / 2) *
+                Math.sin(dLat / 2) +
+
+                Math.cos(
+                    lat1 * Math.PI / 180
+                ) *
+
+                Math.cos(
+                    lat2 * Math.PI / 180
+                ) *
+
+                Math.sin(dLng / 2) *
+                Math.sin(dLng / 2);
+
+
+            const c =
+                2 *
+                Math.atan2(
+                    Math.sqrt(a),
+                    Math.sqrt(1 - a)
+                );
+
+
+            return R * c;
+
+        }
+
+
+        // =========================
+        // UPDATE INFO
+        // =========================
+
+        function updateInfo(
+            lat,
+            lng
+        ) {
+
+            const distance =
+                getDistanceKm(
+                    lat,
+                    lng,
+                    COLLEGE_LAT,
+                    COLLEGE_LNG
+                );
+
+
+            const timeHours =
+                distance /
+                AVERAGE_SPEED_KMH;
+
+
+            const minutes =
+                Math.round(
+                    timeHours * 60
+                );
+
+
+            document
+                .getElementById("distance")
+                .innerText =
+                distance.toFixed(2)
+                + " km";
+
+
+            document
+                .getElementById("eta")
+                .innerText =
+                minutes < 1
+                    ? "Arriving now"
+                    : "~" + minutes + " min";
+
+
+            document
+                .getElementById("lat")
+                .innerText =
+                lat.toFixed(5);
+
+
+            document
+                .getElementById("lng")
+                .innerText =
+                lng.toFixed(5);
+
+
+            document
+                .getElementById("status")
+                .innerText =
+                "🟢 Bus is currently live";
+
+        }
+
+
+        // =========================
+        // SOCKET
+        // =========================
+
+        const socket = io();
+
+
+        socket.on(
+            "receive-location",
+            (data) => {
+
+                // Sirf selected bus
+                if (
+                    data.busNumber !==
+                    busNumber
+                ) {
+
+                    return;
+
+                }
+
+
+                const lat =
+                    Number(data.lat);
+
+
+                const lng =
+                    Number(data.lng);
+
+
+                if (
+                    !Number.isFinite(lat) ||
+                    !Number.isFinite(lng)
+                ) {
+
+                    return;
+
+                }
+
+
+                const position =
+                    [lat, lng];
+
+
+                // Create marker
+                if (!busMarker) {
+
+                    busMarker =
+                        L.marker(
+                            position,
+                            {
+                                icon: busIcon
+                            }
+                        )
+                            .addTo(map)
+                            .bindPopup(
+                                "🚌 " +
+                                busNumber
+                            );
+
+                }
+
+                // Animate from the current marker position to the new GPS point.
+                else {
+                    const currentPosition = busMarker.getLatLng();
+
+                    smoothMoveMarker(
+                        busMarker,
+                        [currentPosition.lat, currentPosition.lng],
+                        position,
+                        1000
+                    );
+                }
+
+
+                updateInfo(
+                    lat,
+                    lng
+                );
+
+
+                document
+                    .getElementById(
+                        "liveStatus"
+                    )
+                    .innerText =
+                    "● LIVE";
+
+
+                if (firstLocation) {
+
+                    map.setView(
+                        position,
+                        16
+                    );
+
+                    firstLocation = false;
+
+                }
+
+            }
+        );
+
+
+        // =========================
+        // BUS OFFLINE
+        // =========================
+
+        socket.on(
+            "bus-offline",
+            (offlineBus) => {
+
+                if (
+                    offlineBus !==
+                    busNumber
+                ) {
+
+                    return;
+
+                }
+
+
+                document
+                    .getElementById(
+                        "liveStatus"
+                    )
+                    .innerText =
+                    "● OFFLINE";
+
+
+                document
+                    .getElementById(
+                        "status"
+                    )
+                    .innerText =
+                    "🔴 " +
+                    busNumber +
+                    " is offline";
+
+            }
+        );
+
+
+        // =========================
+        // BACK
+        // =========================
+
+        function goBack() {
+
+            window.location.href =
+                "/student.html";
+
+        }
+
+    </script>
+
+</body>
+
+</html>

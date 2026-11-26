@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>College Bus Tracking</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+
+        body {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+        }
+
+        .container {
+            background: #ffffff;
+            padding: 40px 50px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            width: 350px;
+        }
+
+        h1 {
+            font-size: 26px;
+            color: #1e3c72;
+            margin-bottom: 8px;
+        }
+
+        h2 {
+            font-size: 16px;
+            color: #555;
+            font-weight: normal;
+            margin-bottom: 30px;
+        }
+
+        .btn-group {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        button {
+            padding: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(0, 0, 0, 0.15);
+        }
+
+        .student-btn {
+            background-color: #2a9d8f;
+            color: white;
+        }
+
+        .driver-btn {
+            background-color: #e76f51;
+            color: white;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <div class="container">
+
+        <h1>🚌 College Bus Tracking System</h1>
+
+        <h2>Select User</h2>
+
+        <div class="btn-group">
+
+            <!-- Student directly Student Dashboard par jayega -->
+            <button
+                class="student-btn"
+                onclick="window.location.href='student.html'">
+                Student
+            </button>
+
+            <!-- Driver pehle Login page par jayega -->
+            <button
+                class="driver-btn"
+                onclick="window.location.href='login.html'">
+                Driver
+            </button>
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>

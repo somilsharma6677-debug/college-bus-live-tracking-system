@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Arial, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+
+            background:
+                linear-gradient(135deg, #1e3c72, #2a5298);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 550px;
+
+            background: white;
+            padding: 35px;
+
+            border-radius: 20px;
+
+            box-shadow:
+                0 15px 40px rgba(0,0,0,0.25);
+
+            text-align: center;
+        }
+
+        .icon {
+            font-size: 45px;
+            margin-bottom: 8px;
+        }
+
+        h1 {
+            color: #1e3c72;
+            font-size: 28px;
+            margin-bottom: 5px;
+        }
+
+        h2 {
+            color: #777;
+            font-size: 15px;
+            font-weight: normal;
+            margin-bottom: 25px;
+        }
+
+        #searchBox {
+            width: 100%;
+            padding: 14px 16px;
+
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+
+            font-size: 15px;
+            outline: none;
+
+            margin-bottom: 20px;
+
+            transition: 0.2s;
+        }
+
+        #searchBox:focus {
+            border-color: #2a9d8f;
+            box-shadow: 0 0 0 3px rgba(42,157,143,0.12);
+        }
+
+        .section-label {
+            text-align: left;
+
+            color: #888;
+            font-size: 12px;
+            font-weight: 700;
+
+            text-transform: uppercase;
+
+            margin-bottom: 10px;
+        }
+
+        .bus-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+
+            margin-bottom: 20px;
+        }
+
+        .empty-msg {
+            color: #999;
+            font-size: 14px;
+
+            padding: 15px;
+
+            background: #f7f7f7;
+            border-radius: 10px;
+        }
+
+        .bus-btn {
+            width: 100%;
+
+            padding: 15px;
+
+            border: none;
+            border-radius: 12px;
+
+            background: #f4f7fb;
+
+            color: #1e3c72;
+
+            font-size: 16px;
+            font-weight: 700;
+
+            cursor: pointer;
+
+            text-align: left;
+
+            transition:
+                transform 0.2s,
+                box-shadow 0.2s,
+                background 0.2s;
+        }
+
+        .bus-btn:hover {
+            transform: translateY(-2px);
+
+            background: #e8f5f3;
+
+            box-shadow:
+                0 5px 15px rgba(0,0,0,0.08);
+        }
+
+        .bus-btn.active {
+            background: #2a9d8f;
+            color: white;
+        }
+
+        .bus-status {
+            float: right;
+
+            font-size: 12px;
+
+            background: #dcfce7;
+            color: #15803d;
+
+            padding: 4px 8px;
+
+            border-radius: 20px;
+        }
+
+        .active .bus-status {
+            background: rgba(255,255,255,0.2);
+            color: white;
+        }
+
+        #status {
+            padding: 13px;
+
+            background: #f4f4f4;
+
+            border-radius: 10px;
+
+            color: #555;
+
+            font-size: 14px;
+
+            margin-bottom: 15px;
+        }
+
+        #trackBtn {
+            width: 100%;
+
+            padding: 15px;
+
+            border: none;
+            border-radius: 12px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #2a9d8f,
+                    #21867a
+                );
+
+            color: white;
+
+            font-size: 16px;
+            font-weight: 700;
+
+            cursor: pointer;
+
+            box-shadow:
+                0 6px 15px rgba(42,157,143,0.25);
+
+            transition: 0.2s;
+        }
+
+        #trackBtn:hover:not(:disabled) {
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 9px 20px rgba(42,157,143,0.3);
+        }
+
+        #trackBtn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .hint {
+            margin-top: 18px;
+
+            color: #999;
+            font-size: 12px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+
+        <div class="icon">🎓</div>
+
+        <h1>Student Dashboard</h1>
+
+        <h2>Choose a college bus to track</h2>
+
+
+        <input
+            type="text"
+            id="searchBox"
+            placeholder="🔍 Search bus, e.g. BUS-01"
+            oninput="handleSearch()"
+        >
+
+
+        <div class="section-label">
+            Live Buses
+        </div>
+
+
+        <div
+            class="bus-list"
+            id="busList">
+
+            <p class="empty-msg">
+                No buses are live right now
+            </p>
+
+        </div>
+
+
+        <p id="status">
+            Select a bus to continue
+        </p>
+
+
+        <button
+            id="trackBtn"
+            onclick="trackSelectedBus()"
+            disabled>
+
+            🗺️ Track Selected Bus
+
+        </button>
+
+
+        <p class="hint">
+            Live location will open on a separate map
+        </p>
+
+    </div>
+
+
+    <script src="/socket.io/socket.io.js"></script>
+
+
+    <script>
+
+        const socket = io();
+
+
+        let selectedBus = null;
+
+        let liveBuses = new Set();
+
+        let lastKnownLocations = {};
+
+
+        // ===============================
+        // RENDER BUS LIST
+        // ===============================
+
+        function renderBusList() {
+
+            const container =
+                document.getElementById("busList");
+
+            const query =
+                document.getElementById("searchBox")
+                    .value
+                    .trim()
+                    .toUpperCase();
+
+            container.innerHTML = "";
+
+            const matchingBuses = [...liveBuses]
+                .filter(busNumber => busNumber.includes(query))
+                .sort();
+
+            if (matchingBuses.length === 0) {
+                container.innerHTML =
+                    '<p class="empty-msg">' +
+                    (liveBuses.size === 0
+                        ? "No buses are live right now"
+                        : "No matching live bus found") +
+                    '</p>';
+                return;
+            }
+
+            matchingBuses.forEach((busNumber) => {
+                const button = document.createElement("button");
+                button.className = "bus-btn";
+
+                if (busNumber === selectedBus) {
+                    button.classList.add("active");
+                }
+
+                button.innerHTML =
+                    "🚌 " +
+                    busNumber +
+                    '<span class="bus-status">LIVE</span>';
+
+                button.onclick = () => selectBus(busNumber);
+                container.appendChild(button);
+            });
+        }
+
+        // ===============================
+        // SELECT BUS
+        // ===============================
+
+        function selectBus(busNumber) {
+
+            selectedBus = busNumber;
+
+            renderBusList();
+
+
+            document
+                .getElementById("status")
+                .innerText =
+                busNumber +
+                " selected";
+
+
+            document
+                .getElementById("trackBtn")
+                .disabled = false;
+
+        }
+
+
+        // ===============================
+        // SEARCH
+        // ===============================
+
+        function handleSearch() {
+            renderBusList();
+        }
+
+        // ===============================
+        // TRACK BUTTON
+        // ===============================
+
+        function trackSelectedBus() {
+
+            if (!selectedBus) {
+
+                return;
+
+            }
+
+
+            /*
+                Bus number URL me pass kar rahe hain.
+                Example:
+
+                map.html?bus=BUS-01
+            */
+
+            window.location.href =
+                "/map.html?bus=" +
+                encodeURIComponent(selectedBus);
+
+        }
+
+
+        // ===============================
+        // BUS ONLINE
+        // ===============================
+
+        socket.on(
+            "receive-location",
+            (data) => {
+
+                const busNumber =
+                    data.busNumber;
+
+
+                lastKnownLocations[busNumber] = [
+                    Number(data.lat),
+                    Number(data.lng)
+                ];
+
+
+                if (!liveBuses.has(busNumber)) {
+                    liveBuses.add(busNumber);
+                }
+
+                renderBusList();
+
+            }
+        );
+
+
+        // ===============================
+        // BUS OFFLINE
+        // ===============================
+
+        socket.on(
+            "bus-offline",
+            (busNumber) => {
+
+                liveBuses.delete(busNumber);
+
+                delete lastKnownLocations[busNumber];
+
+
+                if (selectedBus === busNumber) {
+
+                    selectedBus = null;
+
+                    document
+                        .getElementById("status")
+                        .innerText =
+                        busNumber +
+                        " is now offline";
+
+
+                    document
+                        .getElementById("trackBtn")
+                        .disabled = true;
+
+                }
+
+
+                renderBusList();
+
+            }
+        );
+
+    </script>
+
+</body>
+</html>
